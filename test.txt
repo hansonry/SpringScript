@@ -1,0 +1,25 @@
+{
+   mod: modename.sdl,
+   map: mapname.sdl,
+   players:
+   {
+      humans:
+      [
+         { name: Xello, side: arm,  color: "light blue" },
+         { name: Des,   side: core, color: red          },
+      ],
+      ai: 
+      [
+         { name: BadGuy1, side: core, color: yellow, lib: RAI, client: Des },
+         { name: BadGuy2, side: core, color: green,  lib: RAI, client: Des },
+         { name: BadGuy3, side: core, color: purple, lib: RAI, client: Des },
+      ]
+   },
+   teams:
+   [
+      [Xello, Des],
+      [BadGuy1, BadGuy2, BadGuy3]
+   ]
+}
+
+
