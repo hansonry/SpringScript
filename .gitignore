@@ -1,0 +1,7 @@
+.bam
+*.exe
+*.o
+*.obj
+*.swp
+ConfigParser
+
