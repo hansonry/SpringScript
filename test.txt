@@ -1,6 +1,7 @@
 {
    mod: modename.sdl,
    map: mapname.sdl,
+   host: Xello,
    players:
    {
       humans:
