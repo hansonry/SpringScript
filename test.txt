@@ -6,8 +6,8 @@
    {
       humans:
       [
-         { name: Xello, side: arm,  color: "lightblue" },
-         { name: Des,   side: core, color: red          },
+         { name: Xello, password: 1234, side: arm,  color: lightblue },
+         { name: Des,   password: 5678, side: core, color: red       },
       ],
       ais: 
       [

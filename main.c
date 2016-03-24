@@ -11,7 +11,7 @@ int main(int argc, char * args[])
    SpringScript_Run(&input, stdout);
 
    Scanner_Destroy(&input);
-   printf("End\n");
+   fprintf(stderr, "End\n");
    return 0;
 }
 

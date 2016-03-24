@@ -6,23 +6,32 @@ typedef struct ScriptData_S   ScriptData_T;
 typedef struct SSRoot_S       SSRoot_T;
 typedef struct SSPlayer_S     SSPlayer_T;
 typedef struct SSAI_S         SSAI_T;
+typedef struct SSCommon_S     SSCommon_T;
 typedef struct SSTeam_S       SSTeam_T;
 typedef struct SSTeamMember_S SSTeamMember_T;
 typedef struct SSTeamMemEle_S SSTeamMemEle_T;
 typedef struct ColorPair_S    ColorPair_T;
 
 
-struct SSPlayer_S
+struct SSCommon_S
 {
    const char * name;
    const char * side;
    const char * color;
    int index;
+ 
+};
+
+
+struct SSPlayer_S
+{
+   SSCommon_T com;
+   const char * password;
 };
 
 struct SSAI_S
 {
-   SSPlayer_T player;
+   SSCommon_T com;
    const char * lib;
    SSPlayer_T * client;
 };
@@ -285,9 +294,9 @@ static void SpringScript_Error(ScriptData_T * data, const char * function_name, 
    fprintf(stderr, "Error: %s: %s\n", function_name, error_message);
 }
 
-static void SprintScript_WriteCommonPlayer(SSPlayer_T * player, int team_index, FILE * output)
+static void SprintScript_WriteCommonPlayer(SSCommon_T * com, int team_index, FILE * output)
 {
-   fprintf(output, "      Name=%s;\n", player->name);
+   fprintf(output, "      Name=%s;\n", com->name);
    fprintf(output, "      Team=%i;\n", team_index);
 }
 
@@ -297,8 +306,10 @@ static int SpringScript_WriteGame(SSRoot_T * root, FILE * output)
    int player_count;
    int ai_count;
    int team_count;
+   int team_lead;
    int result;
    SSTeamMember_T * member;
+   SSCommon_T * com;
    SSPlayer_T * player;
    SSAI_T  * ai;
    result = 1;
@@ -322,11 +333,11 @@ static int SpringScript_WriteGame(SSRoot_T * root, FILE * output)
          if(member->ele_list[0].is_ai == 0)
          {
             player = member->ele_list[0].data.player;
-            player->index = player_count;
-            fprintf(output, "   [PLAYER%i]\n   {\n", player->index);
-            SprintScript_WriteCommonPlayer(player, team_count, output);
-            fprintf(output, "      Password=...;\n");
-            fprintf(output, "      Spectator=1;\n");
+            player->com.index = player_count;
+            fprintf(output, "   [PLAYER%i]\n   {\n", player->com.index);
+            SprintScript_WriteCommonPlayer(&player->com, team_count, output);
+            fprintf(output, "      Password=%s;\n", player->password);
+            fprintf(output, "      Spectator=0;\n");
             fprintf(output, "      IsFromDemo=0;\n");
             fprintf(output, "   }\n\n");
             player_count ++;
@@ -335,11 +346,11 @@ static int SpringScript_WriteGame(SSRoot_T * root, FILE * output)
          else
          {
             ai = member->ele_list[0].data.ai;
-            ai->player.index = ai_count;
-            fprintf(output, "   [AI%i]\n   {\n", ai->player.index);
-            SprintScript_WriteCommonPlayer(&ai->player, team_count, output);
+            ai->com.index = ai_count;
+            fprintf(output, "   [AI%i]\n   {\n", ai->com.index);
+            SprintScript_WriteCommonPlayer(&ai->com, team_count, output);
             fprintf(output, "      ShortName=%s;\n", ai->lib);
-            fprintf(output, "      Host=%i;\n", ai->client->name);
+            fprintf(output, "      Host=%i;\n", ai->client->com.index);
             fprintf(output, "   }\n\n");
             ai_count ++;
             team_count ++;
@@ -357,18 +368,21 @@ static int SpringScript_WriteGame(SSRoot_T * root, FILE * output)
 
          if(member->ele_list[0].is_ai == 0)
          {
-            player = member->ele_list[0].data.player;
+            com = &member->ele_list[0].data.player->com;
+            team_lead = player->com.index;
          }
          else
          {
-            player = &member->ele_list[0].data.ai->player;
+            com = &member->ele_list[0].data.ai->com;
+            team_lead = member->ele_list[0].data.ai->client->com.index;
          }
 
             fprintf(output, "   [TEAM%i]\n   {\n", team_count);
-            fprintf(output, "      TeamLeader=%i;\n", player->index);
+            
+            fprintf(output, "      TeamLeader=%i;\n", team_lead);
             fprintf(output, "      AllyTeam=%i;\n", i);
-            fprintf(output, "      RgbColor=%s;\n", ConvertColor(player->color));
-            fprintf(output, "      Side=%s;\n", player->side);
+            fprintf(output, "      RgbColor=%s;\n", ConvertColor(com->color));
+            fprintf(output, "      Side=%s;\n", com->side);
             fprintf(output, "      Advantage=0;\n");
             fprintf(output, "      IncomeMultiplier=1;\n");
             fprintf(output, "   }\n\n");
@@ -389,7 +403,7 @@ static int SpringScript_WriteGame(SSRoot_T * root, FILE * output)
 
 }
 
-static void SpringScript_ParseAPlayer(ScriptData_T * data, SSRoot_T * root, CPValue_T * player, SSPlayer_T * out_player)
+static void SpringScript_ParseACom(ScriptData_T * data, SSRoot_T * root, CPValue_T * player, SSCommon_T * out_player)
 {
    int index;
    CPValueObject_T * obj;
@@ -407,12 +421,12 @@ static void SpringScript_ParseAPlayer(ScriptData_T * data, SSRoot_T * root, CPVa
       }
       else
       {
-         SpringScript_Error(data, "SpringScript_ParseAPlayer", "Expected 'name' to be a Value");
+         SpringScript_Error(data, "SpringScript_ParseACom", "Expected 'name' to be a Value");
       }
    }
    else
    {
-      SpringScript_Error(data, "SpringScript_ParseAPlayer", "Expected object to contain 'name'");
+      SpringScript_Error(data, "SpringScript_ParseACom", "Expected object to contain 'name'");
    }
 
    // Side
@@ -426,15 +440,15 @@ static void SpringScript_ParseAPlayer(ScriptData_T * data, SSRoot_T * root, CPVa
       }
       else
       {
-         SpringScript_Error(data, "SpringScript_ParseAPlayer", "Expected 'side' to be a Value");
+         SpringScript_Error(data, "SpringScript_ParseACom", "Expected 'side' to be a Value");
       }
    }
    else
    {
-      SpringScript_Error(data, "SpringScript_ParseAPlayer", "Expected object to contain 'side'");
+      SpringScript_Error(data, "SpringScript_ParseACom", "Expected object to contain 'side'");
    }
 
-   // Side
+   // color
    index = ConfigParser_GetIndexOfKey(player, "color");
    if(index >= 0)
    {
@@ -445,12 +459,41 @@ static void SpringScript_ParseAPlayer(ScriptData_T * data, SSRoot_T * root, CPVa
       }
       else
       {
-         SpringScript_Error(data, "SpringScript_ParseAPlayer", "Expected 'color' to be a Value");
+         SpringScript_Error(data, "SpringScript_ParseACom", "Expected 'color' to be a Value");
       }
    }
    else
    {
-      SpringScript_Error(data, "SpringScript_ParseAPlayer", "Expected object to contain 'color'");
+      SpringScript_Error(data, "SpringScript_ParseACom", "Expected object to contain 'color'");
+   }
+}
+
+static void SpringScript_ParseAPlayer(ScriptData_T * data, SSRoot_T * root, CPValue_T * player, SSPlayer_T * out_player)
+{
+   int index;
+   CPValueObject_T * obj;
+   CPObjectPair_T * pair;
+
+   obj = &player->data.object;
+   SpringScript_ParseACom(data, root, player, &out_player->com);
+
+   // Password
+   index = ConfigParser_GetIndexOfKey(player, "password");
+   if(index >= 0)
+   {
+      pair = &obj->pair_list[index];
+      if(pair->value->type == e_CPVT_String)
+      {
+         out_player->password = pair->value->data.string.token->str; 
+      }
+      else
+      {
+         SpringScript_Error(data, "SpringScript_ParseAPlayer", "Expected 'password' to be a Value");
+      }
+   }
+   else
+   {
+      SpringScript_Error(data, "SpringScript_ParseAPlayer", "Expected object to contain 'password'");
    }
 }
 
@@ -464,7 +507,7 @@ static void SpringScript_ParseAAI(ScriptData_T * data, SSRoot_T * root, CPValue_
    obj = &player->data.object;
 
 
-   SpringScript_ParseAPlayer(data, root, player, &out_ai->player);
+   SpringScript_ParseACom(data, root, player, &out_ai->com);
 
    // lib
    index = ConfigParser_GetIndexOfKey(player, "lib");
@@ -497,7 +540,7 @@ static void SpringScript_ParseAAI(ScriptData_T * data, SSRoot_T * root, CPValue_
          out_ai->client = NULL;
          for(i = 0; i < root->humans_count; i++)
          {
-            if(name == root->humans_list[i].name)
+            if(name == root->humans_list[i].com.name)
             {
                out_ai->client = &root->humans_list[i];
                break;
@@ -618,7 +661,7 @@ static void SpringScript_ParseTeamMember(ScriptData_T * data, SSRoot_T * root, S
    ele->data.player = NULL;
    for(i = 0; i < root->humans_count; i++)
    {
-      if(str == root->humans_list[i].name)
+      if(str == root->humans_list[i].com.name)
       {
          ele->is_ai = 0;
          ele->data.player = &root->humans_list[i];
@@ -631,7 +674,7 @@ static void SpringScript_ParseTeamMember(ScriptData_T * data, SSRoot_T * root, S
 
       for(i = 0; i < root->ai_count; i++)
       {
-         if(str == root->ai_list[i].player.name)
+         if(str == root->ai_list[i].com.name)
          {
             ele->is_ai = 1;
             ele->data.ai = &root->ai_list[i];
@@ -764,7 +807,7 @@ static void SpringScript_ParseRoot(ScriptData_T * data, SSRoot_T * root, CPValue
          root->host = NULL;
          for(i = 0; i < root->humans_count; i++)
          {
-            if(str == root->humans_list[i].name)
+            if(str == root->humans_list[i].com.name)
             {
                root->host = &root->humans_list[i];
                break;
