@@ -6,10 +6,10 @@
    {
       humans:
       [
-         { name: Xello, side: arm,  color: "light blue" },
+         { name: Xello, side: arm,  color: "lightblue" },
          { name: Des,   side: core, color: red          },
       ],
-      ai: 
+      ais: 
       [
          { name: BadGuy1, side: core, color: yellow, lib: RAI, client: Des },
          { name: BadGuy2, side: core, color: green,  lib: RAI, client: Des },
