@@ -62,6 +62,7 @@ struct SSRoot_S
 {
    const char * mod;
    const char * map;
+   const char * host_addy;
    SSPlayer_T * host;
    SSPlayer_T * humans_list;
    int          humans_count;
@@ -319,6 +320,10 @@ static int SpringScript_WriteGame(SSRoot_T * root, FILE * output)
    fprintf(output, "   GameType=%s;\n", root->mod);
    // Write IsHost
    fprintf(output, "   IsHost=1;\n");
+   // Write HostIP
+   fprintf(output, "   HostIP=%s;\n", root->host_addy);
+   // Write MyPlayerName
+   fprintf(output, "   MyPlayerName=%s;\n", root->host->com.name);
 
    // Write Players
    player_count = 0;
@@ -829,6 +834,25 @@ static void SpringScript_ParseRoot(ScriptData_T * data, SSRoot_T * root, CPValue
       SpringScript_Error(data, "SpringScript_ParseRoot", "Expected to find 'host'");
    }
 
+   // Parse host-address
+   index = ConfigParser_GetIndexOfKey(value, "host-address");
+   if(index >= 0)
+   {
+      pair = &obj->pair_list[index];
+      if(pair->value->type == e_CPVT_String)
+      {
+         str = pair->value->data.string.token->str;
+         root->host_addy = str;
+      }
+      else
+      {
+         SpringScript_Error(data, "SpringScript_ParseRoot", "Expected 'host -address' to be a string");
+      }
+   }
+   else
+   {
+      SpringScript_Error(data, "SpringScript_ParseRoot", "Expected to find 'host-address'");
+   }
    // Find teams
    index = ConfigParser_GetIndexOfKey(value, "teams");
    if(index >= 0)

@@ -1,25 +1,27 @@
 {
-   mod: modename.sdl,
-   map: mapname.sdl,
+   mod: "Zero-K v1.4.3.4",
+   map: "FolsomDamDeluxeV4",
    host: Xello,
+   host-address: 192.168.1.127,
    players:
    {
       humans:
       [
          { name: Xello, password: 1234, side: arm,  color: lightblue },
          { name: Des,   password: 5678, side: core, color: red       },
+         { name: Kat,   password: love, side: arm,  color: green     },
       ],
       ais: 
       [
-         { name: BadGuy1, side: core, color: yellow, lib: RAI, client: Des },
-         { name: BadGuy2, side: core, color: green,  lib: RAI, client: Des },
-         { name: BadGuy3, side: core, color: purple, lib: RAI, client: Des },
+         { name: BadGuy1, side: core, color: yellow, lib: RAI, client: Xello },
+         { name: BadGuy2, side: core, color: green,  lib: RAI, client: Xello },
+         { name: BadGuy3, side: core, color: purple, lib: RAI, client: Xello},
       ]
    },
    teams:
    [
-      [Xello, Des],
-      [BadGuy1, BadGuy2, BadGuy3]
+      [Xello, Kat],
+      [BadGuy1]
    ]
 }
 
